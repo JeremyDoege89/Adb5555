@@ -105,6 +105,29 @@ class AdbClient private constructor(private val context: Context) : AbsAdbConnec
         Outcome.Failed("adbd didn't come back on port $PORT.")
     }
 
+    /**
+     * `adb shell pm grant dev.dreamz.speedeq android.permission.DUMP` — the one-time grant SpeedEQ needs
+     * to find which app is playing (it reads the audio policy dump). Fixed command, fixed package: this
+     * app never runs a shell command it was handed. Uses port 5555 when it's already on, otherwise
+     * Wireless debugging.
+     */
+    suspend fun grantSpeedEq(): Outcome = io {
+        val reply = try {
+            val connected = if (isPortOpen()) connect(LOOPBACK, PORT) else connectTls(context, 8_000)
+            if (!connected) return@io Outcome.WirelessDebuggingOff
+            send("shell:pm grant ${SpeedEq.PACKAGE} ${SpeedEq.PERMISSION}")
+        } catch (e: AdbPairingRequiredException) {
+            return@io Outcome.NeedsPairing
+        } catch (e: Exception) {
+            return@io Outcome.Failed(e.message ?: e.javaClass.simpleName)
+        } finally {
+            runCatching { disconnect() }
+        }
+        // pm prints nothing on success; check the result rather than trusting the silence.
+        if (SpeedEq.hasAccess(context)) Outcome.Done
+        else Outcome.Failed(reply.trim().ifBlank { "SpeedEQ still doesn't have the permission." })
+    }
+
     /** `adb usb`: back to USB only, sent over port 5555 itself (the paired key is trusted there too). */
     suspend fun disable(): Outcome = io {
         if (!isPortOpen()) return@io Outcome.Done

@@ -14,8 +14,8 @@ android {
         // Wireless debugging (pairing + TLS) exists from Android 11.
         minSdk = 30
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
         // Phones only: Conscrypt's native library is ~2 MB per ABI.
         ndk { abiFilters += setOf("arm64-v8a", "armeabi-v7a") }
     }

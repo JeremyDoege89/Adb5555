@@ -67,13 +67,22 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private data class Status(val paired: Boolean, val wireless: Boolean, val port: Boolean)
+private data class Status(
+    val paired: Boolean,
+    val wireless: Boolean,
+    val port: Boolean,
+    val speedEqInstalled: Boolean = false,
+    val speedEqAccess: Boolean = false,
+)
 
 @Composable
 private fun Screen() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    fun read() = Status(AdbClient.isPaired(context), WirelessDebugging.isOn(context), AdbClient.isPortOpen())
+    fun read() = Status(
+        AdbClient.isPaired(context), WirelessDebugging.isOn(context), AdbClient.isPortOpen(),
+        SpeedEq.isInstalled(context), SpeedEq.hasAccess(context),
+    )
     var status by remember { mutableStateOf(Status(false, false, false)) }
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
@@ -137,6 +146,28 @@ private fun Screen() {
         }
 
         message?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+
+        if (status.speedEqInstalled) {
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("SpeedEQ", style = MaterialTheme.typography.titleMedium)
+                    StatusRow("SpeedEQ can see which app is playing", status.speedEqAccess)
+                    Text(
+                        if (status.speedEqAccess) "Done. This survives reboots; you don't need to do it again."
+                        else "One-time grant so SpeedEQ can follow every music app. Pair first (below), " +
+                            "with Wireless debugging on.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    if (!status.speedEqAccess) {
+                        Button(
+                            onClick = { run { AdbClient.get(context).grantSpeedEq() } },
+                            enabled = !busy,
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                        ) { Text("Grant SpeedEQ access") }
+                    }
+                }
+            }
+        }
 
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

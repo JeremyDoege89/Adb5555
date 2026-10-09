@@ -12,6 +12,11 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
 
+    <!-- Package visibility for SpeedEQ, so the app can tell whether it's installed and granted. -->
+    <queries>
+        <package android:name="dev.dreamz.speedeq" />
+    </queries>
+
     <application
         android:name=".App"
         android:allowBackup="false"
